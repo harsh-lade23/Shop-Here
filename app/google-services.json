@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "841981699678",
+    "project_id": "papakidukan-07",
+    "storage_bucket": "papakidukan-07.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:841981699678:android:83f23c7a30d1ccdffdb6cf",
+        "android_client_info": {
+          "package_name": "com.harsh.shophere"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCVfzFI4HxyV9AuY5hKg5LhrnS5G8z7EgE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
