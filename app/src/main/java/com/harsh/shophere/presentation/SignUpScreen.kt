@@ -45,15 +45,16 @@ import com.harsh.shophere.presentation.Utils.CustomTextField
 import com.harsh.shophere.presentation.Utils.SuccessAlertDialog
 import com.harsh.shophere.presentation.navigation.Routes
 import com.harsh.shophere.presentation.navigation.SubNavigation
-import com.harsh.shophere.presentation.viewModels.ShopViewModel
-
+import com.harsh.shophere.features.auth.presentation.AuthViewModel
+import com.harsh.shophere.features.auth.presentation.state.SignUpUiState
 
 @Composable
-fun SignUpScreen(navController: NavHostController,
-                 shopViewModel: ShopViewModel=hiltViewModel()
+fun SignUpScreen(
+    navController: NavHostController,
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
 
-    val state=shopViewModel.signUpScreenState.collectAsStateWithLifecycle()
+    val state = authViewModel.signUpState.collectAsStateWithLifecycle()
 
     if(state.value.isLoading){
         Box(modifier=Modifier.fillMaxSize()){
@@ -180,7 +181,7 @@ fun SignUpScreen(navController: NavHostController,
 
                             Toast.makeText(context, "Creating Account", Toast.LENGTH_SHORT).show()
 
-                            shopViewModel.createUser(userData, password)
+                            authViewModel.register(userData, password)
 
 
                         }

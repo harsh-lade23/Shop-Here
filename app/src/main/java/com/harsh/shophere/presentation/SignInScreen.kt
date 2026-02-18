@@ -43,15 +43,16 @@ import com.harsh.shophere.presentation.Utils.CustomTextField
 import com.harsh.shophere.presentation.Utils.SuccessAlertDialog
 import com.harsh.shophere.presentation.navigation.Routes
 import com.harsh.shophere.presentation.navigation.SubNavigation
-import com.harsh.shophere.presentation.viewModels.ShopViewModel
+import com.harsh.shophere.features.auth.presentation.AuthViewModel
+import com.harsh.shophere.features.auth.presentation.state.LoginUiState
 
 @Composable
 fun SignInScreen(
     navController: NavHostController,
-    shopViewModel: ShopViewModel=hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
 
-    val state=shopViewModel.loginScreenState.collectAsStateWithLifecycle()
+    val state = authViewModel.loginState.collectAsStateWithLifecycle()
     val showDialog= remember{
         mutableStateOf(false)
     }
@@ -142,7 +143,7 @@ fun SignInScreen(
                             email=email,
                         )
                         Toast.makeText(context, "Checking Credentials...", Toast.LENGTH_SHORT).show()
-                        shopViewModel.loginUser(userData, password)
+                        authViewModel.login(userData, password)
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
