@@ -59,31 +59,23 @@ import com.harsh.shophere.domain.models.CartItemModel
 import com.harsh.shophere.domain.models.OrderItem
 import com.harsh.shophere.domain.models.OrdersData
 import com.harsh.shophere.presentation.navigation.Routes
-import com.harsh.shophere.presentation.viewModels.ShopViewModel
+import com.harsh.shophere.features.cart.presentation.CartViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
-    shopViewModel: ShopViewModel = hiltViewModel(),
+    cartViewModel: CartViewModel = hiltViewModel(),
     navController: NavController,
 ) {
-    var cartState = shopViewModel.getCartState.collectAsStateWithLifecycle()
-    val cartData = cartState.value.userData
+    val cartState = cartViewModel.cartState.collectAsStateWithLifecycle()
+    val cartData = cartState.value.cartItems
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
     val context = LocalContext.current
-    val loadingQuantityMap = shopViewModel.loadingQuantityMap
-
-
-
-
-
-
-
 
 
     LaunchedEffect(Unit) {
-        shopViewModel.getCart()
+        cartViewModel.loadCart()
     }
 
     Scaffold(
@@ -168,13 +160,13 @@ fun CartScreen(
 
                             items(cartData) { cartItem ->
                                 CardItemCard(
-                                    item = cartItem!!,
-                                    isQuantityLoading = loadingQuantityMap.value[cartItem.cartItemId] == true,
+                                    item = cartItem,
+                                    isQuantityLoading = cartState.value.isLoading,
                                     onQuantityDecrement = {
-                                        shopViewModel.decrementCartQuantity(cartItem)
+                                        cartViewModel.decrementQuantity(cartItem.cartItemId, cartItem.quantity)
                                     },
                                     onQuantityIncrement = {
-                                        shopViewModel.incrementCartQuantity(cartItem)
+                                        cartViewModel.incrementQuantity(cartItem.cartItemId, cartItem.quantity)
                                     },
                                     onClick = {
                                         navController.navigate(Routes.EachProductDetailsScreen(cartItem.productId))
@@ -195,7 +187,7 @@ fun CartScreen(
                                             fontSize = 18.sp,
                                             fontWeight = FontWeight.SemiBold
                                             )
-                                        Text("₹${shopViewModel.totalCartItemAmount.value}",
+                                        Text("₹${cartState.value.totalPrice}",
                                             fontSize = 18.sp,
                                             fontWeight = FontWeight.SemiBold)
                                     }
@@ -219,7 +211,7 @@ fun CartScreen(
                                         Text("Total: ",
                                             fontSize = 19.sp,
                                             fontWeight = FontWeight.Bold)
-                                        Text("₹${shopViewModel.totalCartItemAmount.value}",
+                                        Text("₹${cartState.value.totalPrice}",
                                             fontSize = 19.sp,fontWeight = FontWeight.Bold)
                                     }
                                 }

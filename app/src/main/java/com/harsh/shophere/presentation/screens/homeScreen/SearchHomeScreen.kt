@@ -55,17 +55,18 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.harsh.shophere.R
 import com.harsh.shophere.domain.models.ProductsDataModel
 import com.harsh.shophere.presentation.navigation.Routes
-import com.harsh.shophere.presentation.viewModels.ShopViewModel
+import com.harsh.shophere.features.search.presentation.SearchViewModel
 
 
 @Composable
 fun SearchHomeProductResultScreen(
-    viewModel: ShopViewModel,
+    searchViewModel: SearchViewModel = hiltViewModel(),
     navController: NavController,
     modifier: Modifier
 ) {
@@ -80,8 +81,8 @@ fun SearchHomeProductResultScreen(
     val showFinalSearchData = remember { mutableStateOf(false) }
 
     /*TODO-Show Different Pages with limited products*/
-    val searchState = viewModel.searchProductState.collectAsStateWithLifecycle()
-    val searchResult = searchState.value.userData
+    val searchState = searchViewModel.searchState.collectAsStateWithLifecycle()
+    val searchResult = searchState.value.products
 
     val showSearchList = remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
@@ -97,7 +98,7 @@ fun SearchHomeProductResultScreen(
     }
     LaunchedEffect(searchQueryValue.value.text) {
         if (searchQueryValue.value.text.isNotBlank()) {
-            viewModel.searchProductsByName(searchQueryValue.value.text.trim())
+            searchViewModel.searchProducts(searchQueryValue.value.text.trim())
         }
     }
 
@@ -287,7 +288,7 @@ fun SearchHomeProductResultScreen(
                             )
                         }
 
-                        searchState.value.userData.isEmpty() -> {
+                        searchState.value.products.isEmpty() -> {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()

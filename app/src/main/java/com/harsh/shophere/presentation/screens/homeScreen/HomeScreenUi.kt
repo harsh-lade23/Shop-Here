@@ -56,27 +56,25 @@ import com.harsh.shophere.R
 import com.harsh.shophere.domain.models.ProductsDataModel
 import com.harsh.shophere.presentation.Utils.ImageBanner
 import com.harsh.shophere.presentation.navigation.Routes
-import com.harsh.shophere.presentation.viewModels.ShopViewModel
+import com.harsh.shophere.features.home.presentation.HomeViewModel
+import com.harsh.shophere.features.user.presentation.UserViewModel
 
 @Composable
 fun HomeScreenUi(
-    shopViewModel: ShopViewModel = hiltViewModel(),
+    homeViewModel: HomeViewModel = hiltViewModel(),
+    userViewModel: UserViewModel = hiltViewModel(),
     navController: NavController,
     firebaseAuth: FirebaseAuth
 ) {
 
-    val homeState = shopViewModel.homeScreenState.collectAsStateWithLifecycle()
-    val getAllSuggestedProduct =
-        shopViewModel.getAllSuggestedProductState.collectAsStateWithLifecycle()
-    val getSuggestProductData = getAllSuggestedProduct.value.userData.filterNotNull()
-    val currentUserDataState=shopViewModel.profileScreenState.collectAsStateWithLifecycle()
-    val isSearching=remember{mutableStateOf(false)}
+    val homeState = homeViewModel.homeState.collectAsStateWithLifecycle()
+    val userState = userViewModel.userState.collectAsStateWithLifecycle()
+    val isSearching = remember { mutableStateOf(false) }
 
 
     LaunchedEffect(Unit) {
-        shopViewModel.getUserById(firebaseAuth.currentUser!!.uid)
-        shopViewModel.getAllSuggestedProducts()
-
+        userViewModel.loadUser(firebaseAuth.currentUser!!.uid)
+        homeViewModel.loadSuggestedProducts()
     }
 
     BackHandler {
@@ -115,7 +113,7 @@ fun HomeScreenUi(
             ) {
 
                 if (isSearching.value) {
-                    SearchHomeProductResultScreen(shopViewModel, navController, modifier= Modifier.weight(1f))
+                    SearchHomeProductResultScreen(navController = navController, modifier = Modifier.weight(1f))
                 }
                 else {
                     /* Welcome Row */
@@ -131,30 +129,30 @@ fun HomeScreenUi(
                             modifier = Modifier
                         ) {
 
-                            if (currentUserDataState.value.userData!=null){
+                            if (userState.value.user != null){
                                 Text(
                                     text = "Welcome Back",
                                     fontSize = 18.sp,
                                 )
                                 Text(
-                                    text = currentUserDataState.value.userData!!.userData.firstName,
+                                    text = userState.value.user!!.firstName,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 22.sp,
                                     modifier = Modifier.padding(start = 2.dp)
                                 )
                             }
-                            else if (currentUserDataState.value.userData==null){
-                                Text(
-                                    text = "Welcome Back",
-                                    fontSize = 22.sp,
-                                )
-                            }
-                            else {
+                            else if (userState.value.isLoading){
                                 Text(
                                     text = "Loading...",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 22.sp,
                                     modifier = Modifier.padding(start = 2.dp)
+                                )
+                            }
+                            else {
+                                Text(
+                                    text = "Welcome Back",
+                                    fontSize = 22.sp,
                                 )
                             }
 
@@ -189,7 +187,7 @@ fun HomeScreenUi(
 
                     }
 
-                    homeState.value.banner?.let { banner ->
+                    homeState.value.banners?.let { banner ->
                         ImageBanner(banners = banner)
 
                     }
@@ -302,19 +300,19 @@ fun HomeScreenUi(
                         modifier = Modifier.padding(top = 18.dp, bottom = 7.dp)
                     ) {
                         when {
-                            getAllSuggestedProduct.value.isLoading -> {
+                            homeState.value.suggestedProducts == null -> {
                                 Box(modifier = Modifier.fillMaxSize()) {
                                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                                 }
                             }
 
-                            getAllSuggestedProduct.value.errorMessage != null -> {
+                            homeState.value.suggestedProductsError != null -> {
                                 Box(modifier = Modifier.fillMaxSize()) {
-                                    Text(text = getAllSuggestedProduct.value.errorMessage!!)
+                                    Text(text = homeState.value.suggestedProductsError!!)
                                 }
                             }
 
-                            getSuggestProductData.isEmpty() -> {
+                            homeState.value.suggestedProducts?.isEmpty() == true -> {
                                 Box(modifier = Modifier.fillMaxSize()) {
                                     Text(text = "No Product to suggest Like One")
                                 }
@@ -352,7 +350,7 @@ fun HomeScreenUi(
                                     contentPadding = PaddingValues(horizontal = 16.dp),
                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
-                                    items(getSuggestProductData) { product ->
+                                    items(homeState.value.suggestedProducts ?: emptyList()) { product ->
                                         ProductCard(
                                             product = product,
                                         ){

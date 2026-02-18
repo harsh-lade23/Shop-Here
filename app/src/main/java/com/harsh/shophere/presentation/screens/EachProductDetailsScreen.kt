@@ -85,6 +85,9 @@ import com.harsh.shophere.domain.models.OrdersData
 import com.harsh.shophere.domain.models.WishListItemModel
 import com.harsh.shophere.presentation.navigation.Routes
 import com.harsh.shophere.presentation.viewModels.ShopViewModel
+import com.harsh.shophere.features.cart.presentation.CartViewModel
+import com.harsh.shophere.features.product.presentation.ProductDetailsViewModel
+import com.harsh.shophere.features.product.presentation.state.ProductDetailsUiState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -92,11 +95,13 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun EachProductDetailsScreen(
-    shopViewModel: ShopViewModel=hiltViewModel(),
+    productDetailsViewModel: ProductDetailsViewModel = hiltViewModel(),
+    cartViewModel: CartViewModel = hiltViewModel(),
+    shopViewModel: ShopViewModel = hiltViewModel(),
     navController: NavController,
     productId: String
 ) {
-    val getProductById=shopViewModel.getProductByIdState.collectAsStateWithLifecycle()
+    val productState = productDetailsViewModel.productState.collectAsStateWithLifecycle()
 
     val context=LocalContext.current
     var selectedSize by remember { mutableStateOf("") }
@@ -108,7 +113,7 @@ fun EachProductDetailsScreen(
     Log.d("Firebase", "EachProductDetailsScreen: ")
     LaunchedEffect(Unit) {
         Log.d("Firebase", "EachProductDetailsScreen: calling function")
-        shopViewModel.getProductById(productId)
+        productDetailsViewModel.loadProductDetails(productId)
     }
 
     Scaffold(
@@ -136,7 +141,7 @@ fun EachProductDetailsScreen(
     ) {innerPadding->
 
         when{
-            getProductById.value.isLoading->{
+            productState.value.isLoading->{
                 Box(modifier= Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ){
@@ -144,12 +149,12 @@ fun EachProductDetailsScreen(
                 }
             }
 
-            getProductById.value.errorMessage!=null || getProductById.value.variantErrorMessage!=null->
-                Text(text = getProductById.value.errorMessage!! + " "+ getProductById.value.variantErrorMessage)
+            productState.value.errorMessage!=null || productState.value.variantErrorMessage!=null->
+                Text(text = productState.value.errorMessage!! + " "+ productState.value.variantErrorMessage)
 
-            getProductById.value.productData!=null && getProductById.value.variantDataList!=null->{
-                val productData=getProductById.value.productData!!.copy(productId=productId)
-                val variantDataList=getProductById.value.variantDataList!!
+            productState.value.product!=null && productState.value.variants!=null->{
+                val productData=productState.value.product!!.copy(productId=productId)
+                val variantDataList=productState.value.variants!!
 
                 val currentVariant= remember { mutableIntStateOf(0) }
 
@@ -421,7 +426,8 @@ fun EachProductDetailsScreen(
                                     variantId = variantDataList[currentVariant.intValue].variantId
 
                                 )
-                                shopViewModel.addToCart(cartDataModel)
+                                cartViewModel.addToCart(cartDataModel)
+                                Toast.makeText(context, "Added to cart", Toast.LENGTH_SHORT).show()
                             }
                                   },
                         modifier = Modifier
