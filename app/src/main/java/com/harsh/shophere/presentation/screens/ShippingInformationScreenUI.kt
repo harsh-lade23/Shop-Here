@@ -32,6 +32,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -53,14 +54,14 @@ import com.harsh.shophere.R
 import com.harsh.shophere.domain.models.Address
 import com.harsh.shophere.domain.models.OrdersData
 import com.harsh.shophere.domain.models.ShippingDetails
-import com.harsh.shophere.presentation.viewModels.ShopViewModel
+import com.harsh.shophere.features.user.presentation.UserViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShippingInformationScreenUI(
     navController: NavHostController,
-    shopViewModel: ShopViewModel = hiltViewModel()
+    userViewModel: UserViewModel = hiltViewModel()
 
 ) {
 
@@ -79,8 +80,7 @@ fun ShippingInformationScreenUI(
 
 
 
-    val addShippingDetailsState=shopViewModel.addShippingDetailsState.collectAsStateWithLifecycle()
-    val addShippingDetailsResult=addShippingDetailsState.value
+    val userState=userViewModel.userState.collectAsStateWithLifecycle()
 
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
@@ -90,7 +90,6 @@ fun ShippingInformationScreenUI(
         navController.previousBackStackEntry?.savedStateHandle?.set("orderData", null)
         navController.popBackStack()
     }
-
 
 
 
@@ -127,17 +126,23 @@ fun ShippingInformationScreenUI(
 
 
         when{
-            addShippingDetailsResult.isLoading->{
+            userState.value.isLoading->{
                 Box (Modifier.fillMaxSize(),
                     contentAlignment=Alignment.Center
                 ){
                     CircularProgressIndicator()
                 }
             }
-            addShippingDetailsResult.errorMessage!=null->{
-                Toast.makeText(context, "Failed to save shipping details", Toast.LENGTH_SHORT).show()
+            userState.value.errorMessage!=null->{
+                // Error state handled silently, will show on button click if needed
             }
-            addShippingDetailsResult.userData!=null->{
+        }
+
+        // Observe success by checking if addresses were updated after save
+
+        LaunchedEffect(userState.value.shippingAddresses) {
+            if (userState.value.shippingAddresses.isNotEmpty() && 
+                shippingDetails.value.name.isNotEmpty()) {
                 Toast.makeText(context, "Shipping details saved successfully", Toast.LENGTH_SHORT).show()
                 val existingData= navController.previousBackStackEntry?.savedStateHandle?.get<OrdersData>("orderData")
                 val updatedOrderData=existingData?.copy(
@@ -479,7 +484,7 @@ fun ShippingInformationScreenUI(
                                 email = email.value
                             )
 
-                        shopViewModel.addShippingDetails(
+                        userViewModel.saveShippingAddress(
                             shippingDetails =shippingDetails.value
                         )
                     }

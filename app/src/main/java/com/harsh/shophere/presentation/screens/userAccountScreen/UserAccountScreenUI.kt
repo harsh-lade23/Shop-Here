@@ -54,40 +54,38 @@ import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseAuth
 import com.harsh.shophere.R
 import com.harsh.shophere.presentation.navigation.Routes
-import com.harsh.shophere.presentation.viewModels.ShopViewModel
+import com.harsh.shophere.features.user.presentation.UserViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserAccountScreenUI(
     navController: NavController,
-    shopViewModel: ShopViewModel= hiltViewModel(),
+    userViewModel: UserViewModel = hiltViewModel(),
     firebaseAuth: FirebaseAuth
 ) {
-    val profileScreenState = shopViewModel.profileScreenState.collectAsStateWithLifecycle()
+    val userState = userViewModel.userState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
-        shopViewModel.getUserById(firebaseAuth.currentUser!!.uid)
+        firebaseAuth.currentUser?.uid?.let { uid ->
+            userViewModel.loadUser(uid)
+        }
     }
 
-
-
-    if (profileScreenState.value.isLoading) {
+    if (userState.value.isLoading) {
         Box(modifier = Modifier.fillMaxSize()) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
         }
     }
-    else if (profileScreenState.value.errorMessage != null) {
-        Text(text = profileScreenState.value.errorMessage!!)
+    else if (userState.value.errorMessage != null) {
+        Text(text = userState.value.errorMessage!!)
     }
-
-    else if (profileScreenState.value.userData != null) {
+    else if (userState.value.user != null) {
         Scaffold(
             topBar = {
                 TopAppBar(
                     modifier = Modifier.fillMaxWidth(),
                     title = {
                         Box (
-
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = 8.dp),
@@ -120,11 +118,9 @@ fun UserAccountScreenUI(
                     .padding(innerPadding)
             ) {
                 ProfileSection(
-                    profileScreenState.value.userData!!.userData.firstName+" "+profileScreenState.value.userData!!.userData.lastName,
-                    userImage = profileScreenState.value.userData!!.userData.profileImage
+                    userState.value.user!!.firstName+" "+userState.value.user!!.lastName,
+                    userImage = userState.value.user!!.profileImage
                 )
-
-
 
 
 

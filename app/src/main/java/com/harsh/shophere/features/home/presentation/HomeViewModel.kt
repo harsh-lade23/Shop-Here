@@ -4,9 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.harsh.shophere.common.ResultState
 import com.harsh.shophere.features.banner.domain.usecase.GetBannersUseCase
+import com.harsh.shophere.features.category.domain.usecase.GetAllCategoriesUseCase
 import com.harsh.shophere.features.category.domain.usecase.GetCategoriesInLimitUseCase
 import com.harsh.shophere.features.home.presentation.state.HomeUiState
-import com.harsh.shophere.features.product.domain.usecase.GetProductsInLimitUseCase
+import com.harsh.shophere.domain.usecase.GetProductsInLimitUseCase
 import com.harsh.shophere.features.product.domain.usecase.GetSuggestedProductsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +21,7 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val getProductsInLimitUseCase: GetProductsInLimitUseCase,
     private val getCategoriesInLimitUseCase: GetCategoriesInLimitUseCase,
+    private val getAllCategoriesUseCase: GetAllCategoriesUseCase,
     private val getBannersUseCase: GetBannersUseCase,
     private val getSuggestedProductsUseCase: GetSuggestedProductsUseCase
 ) : ViewModel() {
@@ -35,7 +37,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             // Load main home data (products, categories, banners)
             combine(
-                getProductsInLimitUseCase(),
+                getProductsInLimitUseCase.getProductsInLimit(),
                 getCategoriesInLimitUseCase(),
                 getBannersUseCase()
             ) { productResult, categoryResult, bannersResult ->
@@ -93,6 +95,30 @@ class HomeViewModel @Inject constructor(
                     is ResultState.Error -> {
                         _homeState.value = _homeState.value.copy(
                             suggestedProductsError = result.error
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun loadAllCategories() {
+        viewModelScope.launch {
+            getAllCategoriesUseCase().collect { result ->
+                when (result) {
+                    is ResultState.Loading -> {
+                        _homeState.value = _homeState.value.copy(isLoading = true)
+                    }
+                    is ResultState.Success -> {
+                        _homeState.value = _homeState.value.copy(
+                            categories = result.result,
+                            isLoading = false
+                        )
+                    }
+                    is ResultState.Error -> {
+                        _homeState.value = _homeState.value.copy(
+                            errorMessage = result.error,
+                            isLoading = false
                         )
                     }
                 }

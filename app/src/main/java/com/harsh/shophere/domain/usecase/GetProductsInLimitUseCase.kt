@@ -2,12 +2,13 @@ package com.harsh.shophere.domain.usecase
 
 import com.harsh.shophere.common.ResultState
 import com.harsh.shophere.domain.models.ProductsDataModel
+import com.harsh.shophere.domain.repository.ProductRepository
 import com.harsh.shophere.domain.repository.Repository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 
-class GetProductsInLimitUseCase @Inject constructor(private val repository: Repository) {
+class GetProductsInLimitUseCase @Inject constructor(private val repository: ProductRepository) {
 
     fun getProductsInLimit(): Flow<ResultState<List<ProductsDataModel>>>{
         return repository.getProductsInLimit()

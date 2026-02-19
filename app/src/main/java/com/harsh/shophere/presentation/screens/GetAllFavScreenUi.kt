@@ -16,9 +16,11 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,6 +38,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.ContentScale
@@ -51,32 +54,39 @@ import coil.compose.AsyncImage
 import com.harsh.shophere.R
 import com.harsh.shophere.domain.models.WishListItemModel
 import com.harsh.shophere.presentation.navigation.Routes
-import com.harsh.shophere.presentation.viewModels.ShopViewModel
-
+import com.harsh.shophere.features.wishlist.presentation.WishlistViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GetAllFavScreenUi(
-    shopViewModel: ShopViewModel=hiltViewModel(),
+    wishlistViewModel: WishlistViewModel = hiltViewModel(),
     navController: NavController,
 ) {
 
     /*TODO- show products in different pages and load one by one as user request*/
-    val getAllFavState=shopViewModel.getAllFavState.collectAsStateWithLifecycle()
-    val getAllFavData=getAllFavState.value.userData
+    val wishlistState = wishlistViewModel.wishlistState.collectAsStateWithLifecycle()
+    val wishlistData = wishlistState.value.wishlistItems
 
-    var searchWishlistItemQuery= remember{ mutableStateOf("") }
-    var searchedWishlist=remember { mutableStateOf<List<WishListItemModel?>>(emptyList()) }
+    var searchWishlistItemQuery = remember{ mutableStateOf("") }
+    var searchedWishlist = remember { mutableStateOf<List<WishListItemModel>>(emptyList()) }
 
-    var focusRequester= FocusRequester()
-    var focusManager= LocalFocusManager.current
+    var focusRequester = FocusRequester()
+    var focusManager = LocalFocusManager.current
 
     LaunchedEffect(Unit) {
-        shopViewModel.getAllFav()
+        wishlistViewModel.loadWishlist()
     }
 
-    searchedWishlist.value=getAllFavData
-
+    // Local filtering for search
+    LaunchedEffect(searchWishlistItemQuery.value, wishlistData) {
+        searchedWishlist.value = if (searchWishlistItemQuery.value.isEmpty()) {
+            wishlistData
+        } else {
+            wishlistData.filter { item ->
+                item.name.contains(searchWishlistItemQuery.value, ignoreCase = true)
+            }
+        }
+    }
 
     Scaffold (
         topBar = {
@@ -109,8 +119,6 @@ fun GetAllFavScreenUi(
                 value = searchWishlistItemQuery.value,
                 onValueChange = { it ->
                     searchWishlistItemQuery.value=it
-                    searchedWishlist.value =shopViewModel.filterWishlistItems(getAllFavData, searchWishlistItemQuery.value)
-
                 },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = colorResource(R.color.darkBeige),
@@ -131,12 +139,12 @@ fun GetAllFavScreenUi(
                         contentDescription = "Search",
                         modifier = Modifier
                             .clickable(onClick = {focusManager.clearFocus() }),
-                        )
+                    )
                 }
             )
 
             when{
-                getAllFavState.value.isLoading->{
+                wishlistState.value.isLoading->{
                     Box(modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ){
@@ -144,14 +152,14 @@ fun GetAllFavScreenUi(
                     }
 
                 }
-                getAllFavState.value.errorMessage!=null->{
+                wishlistState.value.errorMessage!=null->{
                     Box(modifier= Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ){
-                        Text(text = "Error: ${getAllFavState.value.errorMessage!!}")
+                        Text(text = "Error: ${wishlistState.value.errorMessage!!}")
                     }
                 }
-                getAllFavData.isEmpty()->{
+                wishlistData.isEmpty()->{
                     Box(modifier= Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ){
@@ -175,11 +183,15 @@ fun GetAllFavScreenUi(
 
                     ) {
                         items (searchedWishlist.value) {wishListItem->
-                            wishListItem?.let {
-                                WishListCard(wishListItem) {
+                            WishListCard(
+                                wishListItem = wishListItem,
+                                onProductClick = {
                                     navController.navigate(Routes.EachProductDetailsScreen(productId = wishListItem.productId))
+                                },
+                                onRemoveClick = {
+                                    wishlistViewModel.removeFromWishlist(wishListItem.wishListItemId)
                                 }
-                            }
+                            )
                         }
                     }
                 }
@@ -190,35 +202,54 @@ fun GetAllFavScreenUi(
 
 @Composable
 fun WishListCard(
-    wishListProduct: WishListItemModel,
-    onProductClick:()-> Unit
+    wishListItem: WishListItemModel,
+    onProductClick: () -> Unit,
+    onRemoveClick: () -> Unit
 ) {
     Card(
         onClick = onProductClick,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column {
-            AsyncImage(
-                model = wishListProduct.image,
-                contentDescription = wishListProduct.name,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp),
-                contentScale = ContentScale.Crop
-            )
-            Column(
-                modifier = Modifier
-                    .padding(8.dp)
-            ) {
-                Text(
-                    text = wishListProduct.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold
+        Box {
+            Column {
+                AsyncImage(
+                    model = wishListItem.image,
+                    contentDescription = wishListItem.name,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    contentScale = ContentScale.Crop
                 )
-                Text(
-                    text = wishListProduct.price,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold
+                Column(
+                    modifier = Modifier
+                        .padding(8.dp)
+                ) {
+                    Text(
+                        text = wishListItem.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = wishListItem.price,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            // Remove button
+            androidx.compose.material3.IconButton(
+                onClick = onRemoveClick,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(2.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Remove from wishlist",
+                    tint = androidx.compose.ui.graphics.Color.Red,
+                    modifier = Modifier
+                        .shadow(4.dp, spotColor = colorResource(R.color.creamy) )
+
                 )
             }
         }

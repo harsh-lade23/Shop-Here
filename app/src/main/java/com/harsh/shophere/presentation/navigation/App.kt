@@ -218,7 +218,7 @@ fun App(
 //                }
 
                 composable<Routes.CheckOutScreen> {
-                    Log.d("Navigation", "App: inside composabel, about to get data")
+                    Log.d("Navigation", "App: inside composable, about to get data")
                     val orderData: OrdersData? = navController.previousBackStackEntry?.savedStateHandle?.get<OrdersData>("orderData")
                     Log.d("Navigation", "App: got the order data: ${orderData}\ntrying to open checkout")
                     CheckOutScreen(navController=navController, ordersData = orderData?: OrdersData())

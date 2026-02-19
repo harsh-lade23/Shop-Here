@@ -55,32 +55,29 @@ import com.harsh.shophere.R
 import com.harsh.shophere.domain.models.ProductsDataModel
 import com.harsh.shophere.presentation.navigation.Routes
 import com.harsh.shophere.presentation.screens.homeScreen.ProductCard
-import com.harsh.shophere.presentation.viewModels.ShopViewModel
-
+import com.harsh.shophere.features.category.presentation.CategoryViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EachCategoryProductScreenUi(
-    shopViewModel: ShopViewModel = hiltViewModel(),
+    categoryViewModel: CategoryViewModel = hiltViewModel(),
     navController: NavController,
     categoryId: String,
     categoryName: String
 ) {
-    val state = shopViewModel.getSpecificCategoryItemsState.collectAsStateWithLifecycle()
-    val products = state.value.userData
+    val state = categoryViewModel.categoryProductState.collectAsStateWithLifecycle()
+    val products = state.value.products
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
 
     var focusRequester= FocusRequester()
     var focusManager= LocalFocusManager.current
 
-
     LaunchedEffect(Unit) {
-        shopViewModel.getSpecificCategoryItems(categoryId)
+        categoryViewModel.loadProductsByCategory(categoryId)
     }
 
     var searchProductQuery = remember { mutableStateOf("") }
     var finalProductList = remember { mutableStateOf<List<ProductsDataModel?>>(emptyList()) }
-
 
     when {
         state.value.isLoading -> {
@@ -158,7 +155,9 @@ fun EachCategoryProductScreenUi(
                         value = searchProductQuery.value,
                         onValueChange = { it ->
                             searchProductQuery.value = it
-                            finalProductList.value = shopViewModel.filterProducts(products, searchProductQuery.value)
+                            finalProductList.value = products.filter { product ->
+                                product.name.contains(searchProductQuery.value, ignoreCase = true)
+                            }
 
                         },
                         colors = OutlinedTextFieldDefaults.colors(

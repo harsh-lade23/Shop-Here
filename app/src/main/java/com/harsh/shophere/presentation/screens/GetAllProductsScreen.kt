@@ -45,21 +45,17 @@ import androidx.navigation.NavController
 import com.harsh.shophere.R
 import com.harsh.shophere.presentation.navigation.Routes
 import com.harsh.shophere.presentation.screens.homeScreen.ProductCard
-import com.harsh.shophere.presentation.viewModels.ShopViewModel
+import com.harsh.shophere.features.product.presentation.ProductListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GetAllProductScreen(
-    shopViewModel: ShopViewModel=hiltViewModel(),
+    productListViewModel: ProductListViewModel = hiltViewModel(),
     navController: NavController,
 ) {
-    val getAllProductState=shopViewModel.getAllProductState.collectAsStateWithLifecycle()
-    val productData=getAllProductState.value.userData
-
-    val searchProductState=shopViewModel.searchProductState.collectAsStateWithLifecycle()
-    val searchData=searchProductState.value.userData
-
-    Log.d("search", "GetAllProductScreen: all products: ${getAllProductState}\n${searchData}")
+    val productState = productListViewModel.productState.collectAsStateWithLifecycle()
+    val products = productState.value.products
+    val searchResults = productState.value.searchResults
 
 
 
@@ -69,19 +65,8 @@ fun GetAllProductScreen(
         )
     }
 
-
-
-
-    LaunchedEffect(Unit) {
-        Log.d("search", "GetAllProductScreen: Trying to fetch allProducts")
-
-        shopViewModel.getAllProducts()
-    }
-
     LaunchedEffect(searchQueryValue.value.text) {
-        if (searchQueryValue.value.text.isNotBlank()) {
-            shopViewModel.searchProductsByName(searchQueryValue.value.text.trim())
-        }
+        productListViewModel.searchProducts(searchQueryValue.value.text.trim())
     }
 
     val  scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
@@ -138,7 +123,7 @@ fun GetAllProductScreen(
             if (searchQueryValue.value.text.isEmpty()) {
 
                 when {
-                    getAllProductState.value.isLoading -> {
+                    productState.value.isLoading -> {
 
                         Box(
                             modifier = Modifier.fillMaxSize(),
@@ -148,17 +133,17 @@ fun GetAllProductScreen(
                         }
                     }
 
-                    getAllProductState.value.errorMessage != null -> {
+                    productState.value.errorMessage != null -> {
 
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(text = "Error: ${getAllProductState.value.errorMessage!!}")
+                            Text(text = "Error: ${productState.value.errorMessage!!}")
                         }
                     }
 
-                    productData.isEmpty() -> {
+                    products.isEmpty() -> {
                         Log.d("search", "GetAllProductScreen: isempty")
 
                         Box(
@@ -170,7 +155,7 @@ fun GetAllProductScreen(
                     }
 
                     else -> {
-                        Log.d("search", "GetAllProductScreen: else:${productData}")
+                        Log.d("search", "GetAllProductScreen: else:${products}")
 
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(2),
@@ -179,9 +164,9 @@ fun GetAllProductScreen(
                             verticalArrangement = Arrangement.spacedBy(16.dp),
 
                             ) {
-                            Log.d("search", "GetAllProductScreen: inside else: ${productData}")
+                            Log.d("search", "GetAllProductScreen: inside else: ${products}")
 
-                            items(productData) { product ->
+                            items(products) { product ->
                                 Log.d("search", "GetAllProductScreen: checking product empty: ${product}")
 
                                 product?.let {
@@ -204,7 +189,7 @@ fun GetAllProductScreen(
             }
             else{
                 when {
-                    searchProductState.value.isLoading -> {
+                    productState.value.isLoading -> {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
@@ -213,16 +198,16 @@ fun GetAllProductScreen(
                         }
                     }
 
-                    searchProductState.value.errorMessage != null -> {
+                    productState.value.errorMessage != null -> {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(text = "Error: ${searchProductState.value.errorMessage!!}")
+                            Text(text = "Error: ${productState.value.errorMessage!!}")
                         }
                     }
 
-                    searchProductState.value.userData.isEmpty() -> {
+                    searchResults.isEmpty() -> {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
@@ -240,7 +225,7 @@ fun GetAllProductScreen(
 
                             ) {
                             /*TODO - Probably the search function is working wrong, check properly after adding more products*/
-                            items(searchData) { product ->
+                            items(searchResults) { product ->
                                 product?.let {
                                     ProductCard(product) {
                                         navController.navigate(

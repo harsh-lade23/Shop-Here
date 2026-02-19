@@ -60,26 +60,25 @@ import com.harsh.shophere.domain.models.OrderItem
 import com.harsh.shophere.domain.models.OrdersData
 import com.harsh.shophere.domain.models.ShippingDetails
 import com.harsh.shophere.presentation.navigation.Routes
-import com.harsh.shophere.presentation.viewModels.ShopViewModel
-
+import com.harsh.shophere.features.order.presentation.OrderViewModel
+import com.harsh.shophere.features.user.presentation.UserViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CheckOutScreen(
-    shopViewModel: ShopViewModel = hiltViewModel(),
+    orderViewModel: OrderViewModel = hiltViewModel(),
+    userViewModel: UserViewModel = hiltViewModel(),
     navController: NavController,
     ordersData: OrdersData
 ) {
 
-
-
+    val orderState = orderViewModel.orderState.collectAsStateWithLifecycle()
+    val userState = userViewModel.userState.collectAsStateWithLifecycle()
     val context= LocalContext.current
     val selectedMethod = remember { mutableStateOf("")  }
 
     val ordersDataState =remember { mutableStateOf(ordersData) }
     val savedStateHandle=navController.currentBackStackEntry?.savedStateHandle
-
-    val getShoppingDetailListState=shopViewModel.getShippingDetailListState.collectAsStateWithLifecycle()
 
     val selectedShippingDetails=remember { mutableStateOf<ShippingDetails?>(null) }
 
@@ -91,7 +90,20 @@ fun CheckOutScreen(
                 selectedShippingDetails.value = updated.shippingDetails
             }
         }
-        shopViewModel.getShippingDetailList()
+        userViewModel.loadShippingAddresses()
+    }
+
+    LaunchedEffect(orderState.value.isOrderPlaced) {
+        if (orderState.value.isOrderPlaced) {
+            Toast.makeText(
+                context,
+                "Your order has been confirmed",
+                Toast.LENGTH_SHORT
+            ).show()
+            navController.currentBackStackEntry?.savedStateHandle?.set("orderData", ordersDataState.value)
+            navController.navigate(Routes.OrderConfirmationScreen)
+            orderViewModel.resetOrderPlacedState()
+        }
     }
 
     Scaffold(
@@ -130,19 +142,39 @@ fun CheckOutScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     when{
-                        getShoppingDetailListState.value.isLoading->{
+                        userState.value.isLoading->{
                             LinearProgressIndicator(color=colorResource(R.color.darkBeige))
                         }
-                        getShoppingDetailListState.value.errorMessage!=null || getShoppingDetailListState.value.userData==null ->{
-                            Text(text = "Add Shipping Details",
-                                maxLines = 3,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                        userState.value.errorMessage!=null || userState.value.shippingAddresses.isEmpty() ->{
+                            Column {
+                                Text(text = "No shipping addresses found",
+                                    maxLines = 3,
+                                    overflow = TextOverflow.Ellipsis,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                OutlinedButton(
+                                    onClick = {
+                                        navController.currentBackStackEntry?.savedStateHandle?.set("orderData", ordersDataState.value)
+                                        navController.navigate(Routes.ShippingInformationScreen)
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(5.dp),
+                                    border = BorderStroke(1.dp, colorResource(R.color.darkBeige)),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = colorResource(R.color.darkBeige),
+                                    )
+                                ) {
+                                    Icon(Icons.Default.Add, contentDescription = "Add", tint = colorResource(R.color.darkBeige))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Add Shipping Address")
+                                }
+                            }
                         }
-                        getShoppingDetailListState.value.userData!=null->{
+                        userState.value.shippingAddresses.isNotEmpty()->{
                           var expanded by remember { mutableStateOf(false) }
 
-                            val shippingList = getShoppingDetailListState.value.userData ?: emptyList()
+                            val shippingList = userState.value.shippingAddresses
 
                             Column {
                                 Text("Select Shipping Address", style = MaterialTheme.typography.titleMedium)
@@ -347,24 +379,12 @@ fun CheckOutScreen(
                     Button(
                         onClick={/*TODO- Later -pay.invoke()*/
                             if (selectedMethod.value.isNotEmpty() && selectedShippingDetails.value!=null) {
-                                shopViewModel.addToOrders(
+                                orderViewModel.placeOrder(
                                     ordersDataState.value.copy(
                                         shippingMethods = selectedMethod.value
-                                    )
+                                    ),
+                                    navController
                                 )
-
-                                Toast.makeText(
-                                    context,
-                                    "Your order has confirmed",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                navController.currentBackStackEntry?.savedStateHandle?.set("orderData",ordersDataState.value)
-                                Log.d("Order Confirmation", "check out: ${ordersDataState}")
-                                Log.d("Order Confirmation", "checkout: order items ${ordersDataState.value.orderItems}")
-
-                                navController.navigate(Routes.OrderConfirmationScreen)
-                                shopViewModel.clearCart()
-
                                 /*TODO- Later - After confirming the order.-> show animation ->clear cart-> show order summary*/
                             }
                             else if (selectedMethod.value.isEmpty()){
@@ -378,9 +398,16 @@ fun CheckOutScreen(
                             .padding(horizontal = 20.dp)
                             .fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(colorResource(R.color.darkBeige)),
-
+                        enabled = !orderState.value.isLoading
                     ) {
-                        Text(text = "Continue to Shipping")
+                        if (orderState.value.isLoading) {
+                            androidx.compose.material3.CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = colorResource(R.color.white)
+                            )
+                        } else {
+                            Text(text = "Continue to Shipping")
+                        }
                     }
 
                 }

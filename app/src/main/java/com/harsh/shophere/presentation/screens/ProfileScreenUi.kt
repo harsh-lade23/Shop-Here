@@ -49,21 +49,22 @@ import com.harsh.shophere.R
 import com.harsh.shophere.domain.models.UserData
 import com.harsh.shophere.presentation.Utils.LogOutAlertDialog
 import com.harsh.shophere.presentation.navigation.SubNavigation
-import com.harsh.shophere.presentation.viewModels.ShopViewModel
+import com.harsh.shophere.features.user.presentation.UserViewModel
 
 
 @Composable
 fun ProfileScreenUi(
-    shopViewModel: ShopViewModel=hiltViewModel(),
+    userViewModel: UserViewModel = hiltViewModel(),
     navController: NavController,
     firebaseAuth: FirebaseAuth
 ) {
     LaunchedEffect(true){
-        shopViewModel.getUserById(firebaseAuth.currentUser!!.uid)
+        firebaseAuth.currentUser?.uid?.let { uid ->
+            userViewModel.loadUser(uid)
+        }
     }
 
-    val profileScreenState = shopViewModel.profileScreenState.collectAsStateWithLifecycle()
-    val upDateScreenState = shopViewModel.updateScreenState.collectAsStateWithLifecycle()
+    val userState = userViewModel.userState.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
     val showDialog = remember {
@@ -76,16 +77,16 @@ fun ProfileScreenUi(
 
 
     val firstName =
-        remember { mutableStateOf(profileScreenState.value.userData?.userData?.firstName) }
+        remember { mutableStateOf(userState.value.user?.firstName) }
     val lastName =
-        remember { mutableStateOf(profileScreenState.value.userData?.userData?.lastName) }
-    val email = remember { mutableStateOf(profileScreenState.value.userData?.userData?.email) }
+        remember { mutableStateOf(userState.value.user?.lastName) }
+    val email = remember { mutableStateOf(userState.value.user?.email) }
     val phoneNumber =
-        remember { mutableStateOf(profileScreenState.value.userData?.userData?.phoneNumber) }
-    val address = remember { mutableStateOf(profileScreenState.value.userData?.userData?.address) }
+        remember { mutableStateOf(userState.value.user?.phoneNumber) }
+    val address = remember { mutableStateOf(userState.value.user?.address) }
 
-    LaunchedEffect(profileScreenState.value.userData) {
-        profileScreenState.value.userData?.userData?.let { userData ->
+    LaunchedEffect(userState.value.user) {
+        userState.value.user?.let { userData ->
             firstName.value = userData.firstName
             lastName.value = userData.lastName
             email.value = userData.email
@@ -95,27 +96,17 @@ fun ProfileScreenUi(
     }
 
 
-    if (upDateScreenState.value.userData != null) {
-        Toast.makeText(context, upDateScreenState.value.userData, Toast.LENGTH_SHORT).show()
-    } else if (upDateScreenState.value.errorMessage != null) {
+    if (userState.value.errorMessage != null) {
+        Toast.makeText(context, userState.value.errorMessage, Toast.LENGTH_SHORT).show()
+        userViewModel.clearError()
+    }
 
-        Toast.makeText(context, upDateScreenState.value.errorMessage, Toast.LENGTH_SHORT).show()
-
-    } else if (upDateScreenState.value.isLoading) {
+    if (userState.value.isLoading) {
         Box(modifier = Modifier.fillMaxSize()) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
         }
-    }
-
-        if (profileScreenState.value.isLoading) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            }
-        } else if (profileScreenState.value.errorMessage != null) {
-            Text(text = profileScreenState.value.errorMessage!!)
-        } else if (profileScreenState.value.userData != null) {
+    } else if (userState.value.user != null) {
         Scaffold(
-
 
         ) { innerPadding ->
 
@@ -261,9 +252,9 @@ fun ProfileScreenUi(
                                 email = email.value?:"",
                                 phoneNumber = phoneNumber.value?:"",
                                 address = address.value?:"",
-                                userId=profileScreenState.value.userData!!.userData.userId,
+                                userId=userState.value.user!!.userId,
                             )
-                            shopViewModel.updateUserData(
+                            userViewModel.updateProfile(
                                 updatedUserData
                             )
                             isEditing.value = false

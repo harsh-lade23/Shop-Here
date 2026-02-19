@@ -33,7 +33,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
-import com.harsh.shophere.data.repo.RepositoryImplementation
 import com.harsh.shophere.presentation.Utils.ImageBanner
 import com.harsh.shophere.presentation.navigation.App
 import com.harsh.shophere.ui.theme.ShopHereTheme
@@ -47,8 +46,6 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
     @Inject
     lateinit var firebaseAuth: FirebaseAuth
-    @Inject
-    lateinit var repositoryImplementation: RepositoryImplementation
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

@@ -91,7 +91,8 @@ fun OrderConfirmationScreenUI(
 
                                         launchSingleTop = true
 
-                                        restoreState = true     }
+                                        restoreState = true
+                                    }
 
                                 }
                             )
@@ -134,88 +135,67 @@ fun OrderConfirmationScreenUI(
                     Box {
                         Log.d("Order Confirmation", "OrderConfirmationScreenUI: ${ordersData}")
                         Log.d("Order Confirmation", "OrderConfirmationScreenUI: order items ${ordersData.orderItems}")
-                        AsyncImage(
-                            model = ordersData.orderItems[0].image,
-                            contentDescription = "Order Image",
-                            modifier = Modifier
-                                .padding(horizontal = 10.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .fillMaxWidth()
-                                .aspectRatio(1f),
-                            contentScale = ContentScale.Crop
-                        )
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(16.dp))
-                                .matchParentSize()
-                                .padding(horizontal = 10.dp)
-                                .background(
-                                    brush = Brush.verticalGradient(
-                                        listOf(
-                                            MaterialTheme.colorScheme.background.copy(
-                                                alpha = 0.22f
+
+                        // ADDED THIS CHECK: Only draw if we have items
+                        if (ordersData.orderItems.isNotEmpty()) {
+
+                            AsyncImage(
+                                model = ordersData.orderItems[0].image,
+                                contentDescription = "Order Image",
+                                modifier = Modifier
+                                    .padding(horizontal = 10.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .fillMaxWidth()
+                                    .aspectRatio(1f),
+                                contentScale = ContentScale.Crop
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .matchParentSize()
+                                    .padding(horizontal = 10.dp)
+                                    .background(
+                                        brush = Brush.verticalGradient(
+                                            listOf(
+                                                MaterialTheme.colorScheme.background.copy(
+                                                    alpha = 0.22f
+                                                ),
+                                                Color(0xCC1E1E1E)
                                             ),
-                                            Color(0xCC1E1E1E)
-                                        ),
-
                                         )
-                                )
-                        )
-                        {
-                            Row(
-                                Modifier
-                                    .padding(16.dp)
-                                    .fillMaxHeight(),
-                            ) {
-                                Column(
-                                    verticalArrangement = Arrangement.Bottom,
-                                    modifier = Modifier
-                                        .fillMaxHeight()
-                                        .weight(5f)
+                                    )
+                            )
+                            {
+                                Row(
+                                    Modifier
+                                        .padding(16.dp)
+                                        .fillMaxHeight(),
                                 ) {
-                                    Text(
-                                        text = ordersData.orderItems[0].name,
-                                        style = MaterialTheme.typography.displayMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 28.sp,
-                                        textAlign = TextAlign.Center,
+                                    Column(
+                                        verticalArrangement = Arrangement.Bottom,
                                         modifier = Modifier
-                                            .align(Alignment.Start),
-                                        color = colorResource(R.color.white)
-                                    )
-                                    Text(
-                                        text = "Placed on ${LocalDate.now().plusDays(8).dayOfMonth} ${LocalDate.now().plusDays(8).month.name.lowercase().capitalize()} ${LocalDate.now().plusDays(8).year}",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        modifier = Modifier
-                                            .align(Alignment.Start),
-                                        color = colorResource(R.color.lightGray)
-                                    )
+                                            .fillMaxHeight()
+                                            .weight(5f)
+                                    ) {
+                                        Text(
+                                            text = ordersData.orderItems[0].name,
+                                            style = MaterialTheme.typography.displayMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 28.sp,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier
+                                                .align(Alignment.Start),
+                                            color = colorResource(R.color.white)
+                                        )
+                                        Text(
+                                            text = "Placed on ${LocalDate.now().plusDays(8).dayOfMonth} ${LocalDate.now().plusDays(8).month.name.lowercase().capitalize()} ${LocalDate.now().plusDays(8).year}",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            modifier = Modifier
+                                                .align(Alignment.Start),
+                                            color = colorResource(R.color.lightGray)
+                                        )
+                                    }
                                 }
-
-//Add when the order tracking feature is implemented
-/*
-                                Box(
-                                    modifier= Modifier
-                                        .align(Alignment.Bottom)
-                                        .weight(3f)
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(colorResource(R.color.mediumBeige))
-                                        .clickable(
-                                            onClick = {/*TODO*/ }
-                                        ),
-                                    contentAlignment = Alignment.Center
-
-                                ) {
-                                    Text(text = "View Details",
-                                        textAlign = TextAlign.Center,
-                                        style = MaterialTheme.typography.titleSmall,
-                                        color=colorResource(R.color.white),
-                                        modifier = Modifier.padding(vertical = 3.dp, horizontal = 2.dp)
-                                    )
-                                }
-
- */
                             }
                         }
                     }
@@ -228,9 +208,10 @@ fun OrderConfirmationScreenUI(
                             .clip(RoundedCornerShape(8.dp))
                             .clickable(
                                 onClick = {
-                                    navController.navigate(Routes.HomeScreen){
-                                        popUpTo (navController.graph.findStartDestination().id){  }
-                                        launchSingleTop=true
+                                    navController.navigate(Routes.HomeScreen) {
+                                        Log.d("Confirmation Navigation", "OrderConfirmationScreenUI: navigating")
+                                        popUpTo(navController.graph.findStartDestination().id) { }
+                                        launchSingleTop = true
                                     }
 
                                 }

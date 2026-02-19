@@ -84,7 +84,7 @@ import com.harsh.shophere.domain.models.OrderItem
 import com.harsh.shophere.domain.models.OrdersData
 import com.harsh.shophere.domain.models.WishListItemModel
 import com.harsh.shophere.presentation.navigation.Routes
-import com.harsh.shophere.presentation.viewModels.ShopViewModel
+import com.harsh.shophere.features.wishlist.presentation.WishlistViewModel
 import com.harsh.shophere.features.cart.presentation.CartViewModel
 import com.harsh.shophere.features.product.presentation.ProductDetailsViewModel
 import com.harsh.shophere.features.product.presentation.state.ProductDetailsUiState
@@ -97,16 +97,16 @@ import kotlinx.coroutines.launch
 fun EachProductDetailsScreen(
     productDetailsViewModel: ProductDetailsViewModel = hiltViewModel(),
     cartViewModel: CartViewModel = hiltViewModel(),
-    shopViewModel: ShopViewModel = hiltViewModel(),
+    wishlistViewModel: WishlistViewModel = hiltViewModel(),
     navController: NavController,
     productId: String
 ) {
     val productState = productDetailsViewModel.productState.collectAsStateWithLifecycle()
+    val wishlistState = wishlistViewModel.wishlistState.collectAsStateWithLifecycle()
 
     val context=LocalContext.current
     var selectedSize by remember { mutableStateOf("") }
     var quantity by remember { mutableIntStateOf(1) }
-    var isFavorite by remember { mutableStateOf(false) }
 
     val scrollState=rememberScrollState()
 
@@ -114,6 +114,10 @@ fun EachProductDetailsScreen(
     LaunchedEffect(Unit) {
         Log.d("Firebase", "EachProductDetailsScreen: calling function")
         productDetailsViewModel.loadProductDetails(productId)
+    }
+
+    LaunchedEffect(productId) {
+        wishlistViewModel.checkIfProductInWishlist(productId)
     }
 
     Scaffold(
@@ -474,15 +478,13 @@ fun EachProductDetailsScreen(
 
                     OutlinedButton(
                         onClick = {
-
-                            isFavorite = !isFavorite
                             val wishListItemModel= WishListItemModel(
                                 productId=productData.productId,
                                 name = variantDataList[currentVariant.intValue].name,
                                 image = variantDataList[currentVariant.intValue].imageList[0],
                                 price = variantDataList[currentVariant.intValue].finalPrice
                             )
-                            shopViewModel.addToFav(wishListItemModel)
+                            wishlistViewModel.toggleWishlist(wishListItemModel)
                         },
                         modifier = Modifier
                             .padding(horizontal = 10.dp)
@@ -491,9 +493,10 @@ fun EachProductDetailsScreen(
                     ) {
 
                         val scale = remember { Animatable(1f) }
+                        val isInWishlist = wishlistState.value.isProductInWishlist
 
-                        LaunchedEffect(isFavorite) {
-                            if (isFavorite) {
+                        LaunchedEffect(isInWishlist) {
+                            if (isInWishlist) {
                                 launch {
                                     scale.animateTo(
                                         targetValue = 1.3f,
@@ -514,14 +517,14 @@ fun EachProductDetailsScreen(
                         Row {
                             Icon(
                                 imageVector =
-                                    if (isFavorite)Icons.Default.Favorite
+                                    if (isInWishlist) Icons.Default.Favorite
                                     else Icons.Default.FavoriteBorder,
-                                tint = colorResource(R.color.darkBeige),
+                                tint = if (isInWishlist) Color.Red else colorResource(R.color.darkBeige),
                                 contentDescription = "Favorite Icon",
                                 modifier = Modifier.scale(scale.value)
                             )
                             Text(
-                                text = "Add to Wishlist",
+                                text = if (isInWishlist) "In Wishlist" else "Add to Wishlist",
                                 modifier = Modifier.padding(start = 8.dp),
                                 color=colorResource(R.color.darkBeige)
                                 )
